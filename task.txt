@@ -1,0 +1,214 @@
+1) Знайти всіх юзерів в кого вік менше за 20
+
+db.getCollection('users').find(
+	{age:{$lt:20}}
+)
+
+2) Знайти всіх юзерів в котрих хоча б один з батьків Tamara або Petro
+
+db.getCollection('users').find({
+    $or:[
+    {parents:'Tamara'},
+    {parents:'Petro'}
+]
+})
+
+3) Знайти всіх юзерів які вивчають js
+
+db.getCollection('users').find(  
+    {studying:'js'}
+)
+
+4) Знайти всіх юзерів котрі вивчають тільки один предмет и додати їм java
+
+db.getCollection('users').updateMany({
+	studying: {$size:1}},
+	{$push:{studying:'java'}}
+)
+
+5) Знайти всіх юзерів, номера будинків яких знаходяться в межах 1-20
+
+db.getCollection('users').find({'address.house':{$lte:20}})
+
+6) Знайти всіх юзерів в яких назва вулиці містить пробіл
+
+
+db.getCollection('users').find({'address.street':/\s/})
+
+
+7) Видалити всіх юзерів в котрих немає поля studying
+
+db.getCollection('users').remove({studying:null})
+
+8) Знайти всіх юзерів в котрих ім'я когось із батьків закінчується на 'na'
+
+db.getCollection('users').find({parents:/na$/})
+
+9) Всім юзерам котрі не вивчають python додати його
+
+db.getCollection('users').updateMany(
+	{studying: {$ne: 'python'}},
+	{$push:{studying:'python'}}
+)
+						
+10) Посортувати юзерів по рейтингу та по номеру квартири (що то що то, від більшого меншого)
+
+db.getCollection('users').find({}).sort(
+	{'rating':-1,'flat':-1}
+)
+
+11) Знайти всіх дітей в яких сердня оцінка 4.2
+
+db.getCollection('students').find({avgScore:4.2})
+
+12) Знайди всіх дітей з 1 класу
+
+db.getCollection('students').find({class: 1 })
+
+13) Знайти всіх дітей які вивчають фізику
+
+db.getCollection('students').find({lessons: 'physics'})
+
+14) Знайти всіх дітей, батьки яких працюють в науці ( scientist )
+
+db.getCollection('students').find({'parents.profession': 'scientist'})
+
+15) Знайти дітей, в яких середня оцінка більша за 4
+
+db.getCollection('students').find({avgScore: {$gt:4}})
+
+16) Знайти найкращого учня
+
+db.getCollection('students').find({}).sort({avgScore:-1}).limit(1)
+
+17) Знайти найгіршого учня
+
+db.getCollection('students').find({}).sort({avgScore:1}).limit(1)
+
+18) Знайти топ 3 учнів
+
+db.getCollection('students').find({}).sort({avgScore:-1}).limit(3)
+
+19) Знайти середній бал по школі
+
+db.getCollection('students').aggregate([{
+       $group:
+         {
+           _id: "score",
+           avgAmount: { $avg: "$avgScore" }
+         }
+     }])
+
+20) Знайти середній бал дітей які вивчають математику або фізику
+
+db.getCollection('students').aggregate([
+{'$match' : 
+    {
+     $or:[
+        {lessons:'mathematics'},
+        {lessons:'physics'}
+         ]
+     }
+},
+    {$group: {_id:'lessons', avgAmount:{$avg:'$avgScore'}}}
+])
+
+21) Знайти середній бал по 2 класі
+
+db.getCollection('students').aggregate([
+{ '$match' : 
+    {class: 2}    
+},
+    {$group: {_id:'second class', avgAmount:{$avg:'$avgScore'}}}
+])
+
+22) Знайти дітей з не повною сімєю
+
+db.getCollection('students').aggregate([
+{
+    '$match':{parents: {$size:1}}
+}
+])
+
+23) Знайти батьків які не працюють
+
+db.getCollection('students').aggregate([
+{
+    $match:{'parents.profession':{$exists:false}}
+}
+])
+
+24) Не працюючих батьків влаштувати офіціантами
+
+db.getCollection('students').updateMany(
+    {parents:{$exists:1}, 'parents.profession': null },
+    { $set: {'parents.$[item].profession': "waiter"}},
+    {'arrayFilters': [{'item.profession':null}]}
+)
+
+25) Вигнати дітей, які мають середній бал менше ніж 2.5
+
+
+db.getCollection('students').aggregate([
+
+{
+    $match: {
+        avgScore: { $lt: 2.5 }
+    }
+},
+{
+    $unset: ['class','lessons','avgScore']
+}
+])
+
+26) Дітям, батьки яких працюють в освіті ( teacher ) поставити 5
+
+db.getCollection('students').aggregate([
+
+{
+    $match: {
+        'parents.profession': { $eq: 'teacher'}
+    }
+},
+{
+    $set: {
+      'avgScore': 5
+    }
+}
+])
+
+27) Знайти дітей які вчаться в початковій школі (до 5 класу) і вивчають фізику ( physics )
+
+db.getCollection('students').aggregate([
+
+    {
+        $match: 
+        {   
+            $and:
+                [{ class: { $lt: 5 }}, { lessons: 'physics'}]
+        }
+    }
+])
+
+28) Знайти найуспішніший клас
+
+db.getCollection('students').aggregate([
+    {
+        $group: {
+        _id: '$class',
+        maxAvgScoreOfClass: {
+            $sum: '$avgScore'
+        }
+        }
+    }, 
+    { $project: {
+        'class':'$_id',
+        '_id':0,
+        maxAvgScoreOfClass:1
+        }
+    },
+    {
+        $match: {class: 4}
+    }
+])
+
